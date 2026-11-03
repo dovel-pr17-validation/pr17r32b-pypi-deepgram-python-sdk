@@ -1,0 +1,349 @@
+# Changelog
+
+## [7.16.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.15.0...v7.16.0) (2026-10-27)
+
+
+### Features
+
+* **Voice Agent Think Live:** Configure `agent.think_live` with the Deepgram v1 provider; update it during a session with `connection.send_update_think_live(...)`; and receive `ThinkLiveUpdated` and `FrustrationDetected` events. Use `connection.send_inject_dynamic_agent_message(...)` to request a Think Live-generated filler line. `ConversationText` now reports `conversational_behavior` (`default`, `backchannel`, `presence_check`, or `filler`); the service always sends it, while older or self-hosted payloads default to `default` in the Python model. ([#815](https://github.com/deepgram/deepgram-python-sdk/issues/815)) ([0a97e3a](https://github.com/deepgram/deepgram-python-sdk/commit/0a97e3a89af7235be710e0df2e18f60a4b0e28da))
+* **Flux TTS:** Flux models now support 41 languages and 230 voices. Continue to pass the model as `flux-{voice}-{language}`; text normalization is available for English, German, Dutch, French, Hindi, Italian, Japanese, Portuguese, Russian, and Spanish. ([#815](https://github.com/deepgram/deepgram-python-sdk/issues/815)) ([0a97e3a](https://github.com/deepgram/deepgram-python-sdk/commit/0a97e3a89af7235be710e0df2e18f60a4b0e28da))
+
+
+### Bug Fixes
+
+* **Agent:** Document `ConversationText.conversational_behavior` as always sent, while retaining the `default` fallback for self-hosted and mocked payload compatibility. ([#819](https://github.com/deepgram/deepgram-python-sdk/issues/819)) ([cd8ba29](https://github.com/deepgram/deepgram-python-sdk/commit/cd8ba297947767f41b13c8289657490c0058c7ac))
+
+## [7.15.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.14.0...v7.15.0) (2026-10-23)
+
+
+### Features
+
+* **Listen V1 / Nova-3 multilingual:** Add optional `language_hint` support for synchronous and asynchronous URL/file transcription and WebSocket connections. Pass one BCP-47 hint as a string or several as a list; hints bias detection when `model="nova-3"` and `language="multi"`. Transcription alternatives now expose typed `languages` and normalized `languages_hinted` fields, with per-word and utterance language metadata. ([#813](https://github.com/deepgram/deepgram-python-sdk/issues/813)) ([b474446](https://github.com/deepgram/deepgram-python-sdk/commit/b474446abaf57323e30e8db834535fbcdc047386))
+
+## [7.14.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.13.0...v7.14.0) (2026-10-20)
+
+
+### Features
+
+* **Voice Agent:** Send protocol-transparent control frames with sync or async `connection.send_raw(...)`. Dictionary payloads are serialized without model validation; pre-serialized JSON strings are sent unchanged. ([#789](https://github.com/deepgram/deepgram-python-sdk/issues/789))
+* **Listen V1:** Receive typed `ListenV1ConfigureSuccess` and `ListenV1ConfigureFailure` responses after `connection.send_configure(ListenV1Configure(...))`, including failure codes for unsupported or over-limit keyterms. ([#803](https://github.com/deepgram/deepgram-python-sdk/issues/803))
+
+
+### Bug Fixes
+
+* **Voice Agent:** Clarify ForceEndTurn availability for hosted and self-hosted deployments. The example now reports `FORCE_END_TURN_UNSUPPORTED` and waits for the final outcome before closing the connection. ([#788](https://github.com/deepgram/deepgram-python-sdk/issues/788))
+
+## [7.13.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.12.0...v7.13.0) (2026-10-08)
+
+
+### Features
+
+* **Listen V1:** Reconfigure an active Nova-3 stream without reconnecting with `connection.send_configure(ListenV1Configure(...))`, including keyterms and the numerals formatting feature. Server-side Configure rejections arrive as typed `ListenV1Error` responses; send an empty keyterms list to clear all active keyterms. ([#799](https://github.com/deepgram/deepgram-python-sdk/issues/799)) ([dce6960](https://github.com/deepgram/deepgram-python-sdk/commit/dce69606070462e6d4f38cb0bb71b7f7d1425ba0))
+* **Voice Agent:** Exchange custom Think-provider payloads with `send_custom_to_think_provider(AgentV1CustomToThinkProvider(...))` and `AgentV1CustomFromThinkProvider` responses. This experimental capability requires a configured custom Think-provider WebSocket endpoint; payloads preserve nested JSON values. ([#799](https://github.com/deepgram/deepgram-python-sdk/issues/799)) ([dce6960](https://github.com/deepgram/deepgram-python-sdk/commit/dce69606070462e6d4f38cb0bb71b7f7d1425ba0))
+
+## [7.12.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.11.0...v7.12.0) (2026-10-01)
+
+
+### Features
+
+* **Speak v2 (Flux TTS):** Add inline pause markers for batch requests and IPA pronunciation overrides for Flux batch, Flux WebSocket, and Aura-2 requests. Pronunciation is Early Access; pause markers are Flux batch-only. See [Speed, Pause, Pronunciation](https://developers.deepgram.com/docs/tts-voice-controls). ([#797](https://github.com/deepgram/deepgram-python-sdk/issues/797)) ([d2b5514](https://github.com/deepgram/deepgram-python-sdk/commit/d2b5514eab37761332fcebed75ced20e54088337))
+* **TextBuilder:** Emit the Flux marker syntax the API accepts: pauses as `\{pause:500ms\}` and pronunciations as `\{"word": "...", "pronounce": "<IPA>"\}`. The 7.11.0 markers (`{pause:500}` and the unescaped pronunciation form) are rejected by `/v2/speak` with `BREAK_SYNTAX_INVALID` or ignored, so upgrade to use TextBuilder with Flux TTS. Limits now match Flux batch: pauses 500-3000 ms in 100 ms steps (was 500-5000) and at most 8 per request (was 50). `pause()`, `from_ssml()`, and `build()` raise `ValueError` for out-of-range or off-grid durations (previously rounded), for malformed markers, and for pause-plus-pronunciation combinations, instead of sending a request the API would reject.
+* **Listen v2 (Flux):** Add typed `Warning` responses while preserving dict-style response access during the 7.x transition.
+
+### Compatibility
+
+* **Topics and Intents:** `SharedTopics` and `SharedIntents` now type the direct `segments` response shape returned by the API. Deprecated `results` facades, legacy import paths, and legacy construction remain available in v7.
+
+## [7.11.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.10.0...v7.11.0) (2026-09-23)
+
+
+### Features
+
+* **Listen v2 (Flux):** change numerals during an active connection with `connection.send_configure(ListenV2Configure(numerals=True))`. Numerals convert written numbers to numerical format for turns transcribed after the update. ([#794](https://github.com/deepgram/deepgram-python-sdk/issues/794)) ([c7c1b3f](https://github.com/deepgram/deepgram-python-sdk/commit/c7c1b3fac4be6e08bb43475d82545cbea5974602))
+
+## [7.10.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.9.0...v7.10.0) (2026-09-17)
+
+
+### Features
+
+* **Voice Agent:** Add typed `FunctionCallCancelled` WebSocket events. Events identify function calls that are no longer valid; do not send a `FunctionCallResponse` for the listed call IDs. ([#790](https://github.com/deepgram/deepgram-python-sdk/issues/790)) ([7f5b642](https://github.com/deepgram/deepgram-python-sdk/commit/7f5b642c2caf0d6fee89621089db6d61e8b77e48))
+* **Voice Agent:** Add the optional `defer_until_eot` function setting. When enabled, it holds a function call until the user's turn is confirmed and discards the deferred call if the turn resumes. Defaults to `false`. ([#790](https://github.com/deepgram/deepgram-python-sdk/issues/790)) ([7f5b642](https://github.com/deepgram/deepgram-python-sdk/commit/7f5b642c2caf0d6fee89621089db6d61e8b77e48))
+
+## [7.9.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.8.1...v7.9.0) (2026-09-14)
+
+
+### Features
+
+* **Voice Agent:** Adds `send_force_end_turn()` and typed ForceEndTurn messages for V2 Flux listen providers. ([#783](https://github.com/deepgram/deepgram-python-sdk/issues/783)) ([ff49864](https://github.com/deepgram/deepgram-python-sdk/commit/ff49864c680d6fd32199364603b1eeb200b942fe))
+* **Voice Agent:** Adds integer `expressivity` from `-2` through `2` for Deepgram Flux TTS providers. ([#783](https://github.com/deepgram/deepgram-python-sdk/issues/783)) ([ff49864](https://github.com/deepgram/deepgram-python-sdk/commit/ff49864c680d6fd32199364603b1eeb200b942fe))
+* **Flux TTS:** `speed` accepts `0.5` through `1.5` in `0.05` increments, replacing the previously documented `0.85` through `1.15` range. ([#783](https://github.com/deepgram/deepgram-python-sdk/issues/783)) ([ff49864](https://github.com/deepgram/deepgram-python-sdk/commit/ff49864c680d6fd32199364603b1eeb200b942fe))
+
+### Model Catalog
+
+* **Speak V1:** Removes `aura-2-perseo-it` from model literals. The API never served the model and returns 400 `No such model/version combination found` for it. ([#783](https://github.com/deepgram/deepgram-python-sdk/issues/783)) ([ff49864](https://github.com/deepgram/deepgram-python-sdk/commit/ff49864c680d6fd32199364603b1eeb200b942fe))
+
+## [7.8.1](https://github.com/deepgram/deepgram-python-sdk/compare/v7.8.0...v7.8.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **TextBuilder:** `ssml_to_deepgram()` now preserves a `<phoneme>` pronunciation when its valid `ph` and `alphabet` attributes appear in either order. ([#741](https://github.com/deepgram/deepgram-python-sdk/issues/741)) ([7fd4b63](https://github.com/deepgram/deepgram-python-sdk/commit/7fd4b63b9f15ac4a7f854f00a85101490cb01f4d))
+* **Credentials:** Explicitly passing `api_key=None` continues to disable ambient `DEEPGRAM_API_KEY` lookup, which is important for multi-tenant and test environments. ([#778](https://github.com/deepgram/deepgram-python-sdk/issues/778)) ([e675990](https://github.com/deepgram/deepgram-python-sdk/commit/e6759904ec732d3d4189d30d202517b68c4ffd7b))
+* **Credentials:** `DeepgramClient()` and `AsyncDeepgramClient()` now resolve `DEEPGRAM_API_KEY` when constructed, so `load_dotenv()` can run after importing the SDK. Closes [#734](https://github.com/deepgram/deepgram-python-sdk/issues/734). ([#767](https://github.com/deepgram/deepgram-python-sdk/issues/767)) ([ec362ec](https://github.com/deepgram/deepgram-python-sdk/commit/ec362ecef6540d5c6d147b54f55fc8d952bd0e0d))
+* **Custom transports:** Speak V2 WebSocket connections now honor `transport_factory`, matching the routing behavior of other WebSocket APIs for proxies, test doubles, and custom-hosted transports. ([#766](https://github.com/deepgram/deepgram-python-sdk/issues/766)) ([0980663](https://github.com/deepgram/deepgram-python-sdk/commit/0980663320d9fd36efea6e82581e55e1899694e4))
+
+
+### Documentation
+
+* **Transcription:** Clarified that Nova-3 assumes English when `language` is omitted; non-English and multilingual audio require an explicit language such as `fr` or `multi`. ([#771](https://github.com/deepgram/deepgram-python-sdk/issues/771)) ([4574337](https://github.com/deepgram/deepgram-python-sdk/commit/45743375d717e23c6e4109bb581bed6d9f220637))
+* **Examples:** Added Listen V1 live microphone transcription with optional `sounddevice`, device selection, bounded audio buffering, transcript output, and clean Ctrl-C shutdown. ([#780](https://github.com/deepgram/deepgram-python-sdk/issues/780)) ([08f0471](https://github.com/deepgram/deepgram-python-sdk/commit/08f0471dfc4b9e814f4d00a2cdba0890870e9f6a))
+* **Examples:** Added a resilient Listen V1 live transcription pattern with exponential backoff, reconnect-aware audio buffering, timestamp continuity, and clean shutdown. ([#776](https://github.com/deepgram/deepgram-python-sdk/issues/776)) ([96b2d11](https://github.com/deepgram/deepgram-python-sdk/commit/96b2d11fc2fde5c0155e9afb39d44f211370712f))
+* **Examples:** Added an application-owned Voice Agent session recorder that serializes received transcripts, function calls, and latency reports as JSON while leaving consent, redaction, retention, and storage policy to the application. Closes [#775](https://github.com/deepgram/deepgram-python-sdk/issues/775). ([#781](https://github.com/deepgram/deepgram-python-sdk/issues/781)) ([30ad152](https://github.com/deepgram/deepgram-python-sdk/commit/30ad15208e67e12637a207981f8245cfc3cb0b29))
+* **Text-to-Speech:** Corrected streaming synthesis snippets to iterate the response byte chunks instead of accessing a nonexistent `.stream` attribute. ([#749](https://github.com/deepgram/deepgram-python-sdk/issues/749)) ([178724e](https://github.com/deepgram/deepgram-python-sdk/commit/178724e1f63148779afc66fc9c07039f38a05d7e))
+
+## [7.8.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.7.1...v7.8.0) (2026-08-28)
+
+
+### Features
+
+* **regen:** listen v2 force-end-turn and listen v1 diarize metadata ([#768](https://github.com/deepgram/deepgram-python-sdk/issues/768)) ([bacd1b5](https://github.com/deepgram/deepgram-python-sdk/commit/bacd1b5e573f1b892b81f2e25081ba9b240cfd76))
+
+## [7.7.1](https://github.com/deepgram/deepgram-python-sdk/compare/v7.7.0...v7.7.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **listen/v2:** restore subscript access on typed responses ([c4d2580](https://github.com/deepgram/deepgram-python-sdk/commit/c4d2580951edac24c08c4ade1c79930a91bee9a9))
+* narrow listen v2 compatibility to subscript access ([aac5e0a](https://github.com/deepgram/deepgram-python-sdk/commit/aac5e0a5ad84665bc8c46e1ee829320c52553801))
+* preserve dict access on typed response models ([b9f544a](https://github.com/deepgram/deepgram-python-sdk/commit/b9f544a1e6c1fb0db38fefb1b31da425fd476c9f))
+* restore listen v2 mapping behavior ([8a18e3b](https://github.com/deepgram/deepgram-python-sdk/commit/8a18e3bbea68f649772f2bf3b6aa993e2c596661))
+* scope dict compatibility to listen v2 responses ([0c67f00](https://github.com/deepgram/deepgram-python-sdk/commit/0c67f0038ea7de4829212afa2e550d64eb9847ec))
+
+## [7.7.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.6.0...v7.7.0) (2026-08-12)
+
+Flux TTS streaming controls and Listen v2 redaction.
+
+
+### Features
+
+* **Speak v2 (Flux TTS streaming):** barge-in via `send_interrupt()` (optional `playback_offset`, `{type: "time_ms", value: N}`), answered by a `SpeechInterrupted` server message whose metadata carries the new `controls_applied.breaks_applied` counter; mid-stream `send_configure()` to change `speed`, acknowledged by `ConfigureSuccess` / `ConfigureFailure`; new `speed` and `expressivity` connect query parameters. Inline pause and pronunciation controls are not applied at launch — they are stripped before synthesis and support is coming soon. ([#758](https://github.com/deepgram/deepgram-python-sdk/issues/758)) ([aab1eae](https://github.com/deepgram/deepgram-python-sdk/commit/aab1eae8704d50aba5d8823ef09b7278ff03580c))
+* **Listen v2:** `redact` connect parameter (`ListenV2Redact`: `numbers`, `aggressive_numbers`); `send_configure()` is now properly typed (`ListenV2Configure` + `ListenV2ConfigureSuccess` in the response union), replacing the previous `typing.Any` shim. ([#758](https://github.com/deepgram/deepgram-python-sdk/issues/758)) ([aab1eae](https://github.com/deepgram/deepgram-python-sdk/commit/aab1eae8704d50aba5d8823ef09b7278ff03580c))
+* **Other:** `GoogleThinkProviderVersion` adds `ai-studio-v1beta` and `gemini-enterprise-agent-v1`; `AgentV1UpdateListenListenProvider` discriminated union (`_V1` / `_V2`, discriminant `version`); `client_wrapper` now derives its version from `importlib.metadata` rather than a hardcoded string. ([#758](https://github.com/deepgram/deepgram-python-sdk/issues/758)) ([aab1eae](https://github.com/deepgram/deepgram-python-sdk/commit/aab1eae8704d50aba5d8823ef09b7278ff03580c))
+
+
+### Compatibility
+
+* No breaking changes against v7.6.0: 0 removed public exports, 0 deleted modules, baseline socket-client signatures intact, and enum changes are widenings only.
+* The `deepgram` speak provider `version` widens from `Literal["v1"]` to `str`.
+* `AgentV1UpdateListenListen.provider` moves from a bare `DeepgramListenProviderV2` to a required discriminated union; a compatibility validator coerces a legacy provider instance or bare dict into the new shape (both serialize to `version: "v2"`), so existing callers are unaffected.
+
+## [7.6.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.5.0...v7.6.0) (2026-07-22)
+
+
+### Features
+
+* **regen:** flux stt numerals and aura-2 multilingual tts voices ([#746](https://github.com/deepgram/deepgram-python-sdk/issues/746)) ([17a1deb](https://github.com/deepgram/deepgram-python-sdk/commit/17a1deb43705f0d9c667f12c72a585159a71ad8f))
+
+## [7.5.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.4.0...v7.5.0) (2026-07-14)
+
+
+### Features
+
+* **Streaming text-to-speech (Flux) via `speak.v2`** — new WebSocket TTS: `client.speak.v2.connect(...)` streams `Speak`/`Flush`/`Close` and returns audio frames plus control messages. Also adds **agent `UpdateListen`/`ListenUpdated`** (swap the listen provider mid-session) and **Flux end-of-turn tuning** (`eot_threshold`, `eager_eot_threshold`, `eot_timeout_ms`). ([#742](https://github.com/deepgram/deepgram-python-sdk/issues/742)) ([69a2445](https://github.com/deepgram/deepgram-python-sdk/commit/69a2445c7c0c5ce1726566331f13030df64062e5))
+* **Flux text-to-speech batch (REST)** endpoint and agent latency report. ([#744](https://github.com/deepgram/deepgram-python-sdk/issues/744)) ([6ca71c4](https://github.com/deepgram/deepgram-python-sdk/commit/6ca71c40e158f5bdf084e6b55572deca1532c465))
+
+## [7.4.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.3.1...v7.4.0) (2026-06-26)
+
+
+### Features
+
+* **regen:** v2 language_hints, profanity filter, word timings, diarize_model ([#730](https://github.com/deepgram/deepgram-python-sdk/issues/730)) ([da6b7ba](https://github.com/deepgram/deepgram-python-sdk/commit/da6b7ba8b5583a9dcddfd3950b4abd4d2645c9fa))
+
+
+### Bug Fixes
+
+* redact Authorization header from websockets DEBUG logs ([#731](https://github.com/deepgram/deepgram-python-sdk/issues/731)) ([029d877](https://github.com/deepgram/deepgram-python-sdk/commit/029d8771a2957fd5ffbc3c50fb40550098fcfad3))
+
+
+### Documentation
+
+* improve contributor onboarding and setup instructions ([#718](https://github.com/deepgram/deepgram-python-sdk/issues/718)) ([3f7398a](https://github.com/deepgram/deepgram-python-sdk/commit/3f7398a9782a1efcfd99408f1392907aa4e68cf3))
+
+## [7.3.1](https://github.com/deepgram/deepgram-python-sdk/compare/v7.3.0...v7.3.1) (2026-06-03)
+
+
+### Bug Fixes
+
+* widen pydantic-core bound via fern 5.14.8 regen (closes [#701](https://github.com/deepgram/deepgram-python-sdk/issues/701)) ([#724](https://github.com/deepgram/deepgram-python-sdk/issues/724)) ([5c1e845](https://github.com/deepgram/deepgram-python-sdk/commit/5c1e845e677f4dc2aa44695e4c2f6366136f3f75))
+
+## [7.3.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.2.0...v7.3.0) (2026-06-01)
+
+
+### Features
+
+* **client:** add a declarative `reconnect` flag with transport-factory auto-disable. `DeepgramClient` / `AsyncDeepgramClient` now accept `reconnect: bool = True` (exposed read-only as `client.reconnect`). When a custom `transport_factory` is supplied, `reconnect` auto-sets to `False` to signal that the transport owns its own retry/reconnect lifecycle — e.g. the SageMaker transport's jittered backoff + replay buffers — so SDK-level retries don't stack on top and cause storm-on-storm under burst load. Pass `reconnect=True` explicitly to opt back in. Declarative only for now (the Python SDK has no wrapper reconnect layer; `websockets` doesn't auto-reconnect), fully backwards-compatible, and parity with the same flag in the JS ([#492](https://github.com/deepgram/deepgram-js-sdk/issues/492)) and Java SDKs ([#720](https://github.com/deepgram/deepgram-python-sdk/issues/720)) ([b5d5905](https://github.com/deepgram/deepgram-python-sdk/commit/b5d590577429adeacfe2068df4c33201a158c9de))
+
+## [7.2.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.1.1...v7.2.0) (2026-05-18)
+
+
+### Features
+
+* **agent:** Diarization v2 is now GA for batch transcription via the listen REST API ([#714](https://github.com/deepgram/deepgram-python-sdk/issues/714)) ([9d9a43d](https://github.com/deepgram/deepgram-python-sdk/commit/9d9a43dbc2bd739068b05e5d136f487b56ef5b7c))
+* **agent:** rename listen-provider types to `DeepgramListenProviderV1`, `DeepgramListenProviderV2`, and `DeepgramListenProviderV2LanguageHint`. The old `AgentV1SettingsAgent[Context]ListenProvider*` names continue to work as backward-compatible aliases ([#714](https://github.com/deepgram/deepgram-python-sdk/issues/714)) ([9d9a43d](https://github.com/deepgram/deepgram-python-sdk/commit/9d9a43dbc2bd739068b05e5d136f487b56ef5b7c))
+
+
+### Bug Fixes
+
+* **agent:** route `agent.v1.settings.think.models.list()` to the correct REST host. Previously this endpoint resolved against the wrong base URL and was unusable ([#715](https://github.com/deepgram/deepgram-python-sdk/issues/715)) ([ffd2e7d](https://github.com/deepgram/deepgram-python-sdk/commit/ffd2e7d7e0e0ea2d72e13e1d4c91ac52e97a5ee8))
+* **environment:** replace `DeepgramClientEnvironment.AGENT` with a new `agent_rest` slot on `DeepgramClientEnvironment`. Callers constructing a custom environment should pass `agent_rest=` instead of `agent=` ([#715](https://github.com/deepgram/deepgram-python-sdk/issues/715)) ([ffd2e7d](https://github.com/deepgram/deepgram-python-sdk/commit/ffd2e7d7e0e0ea2d72e13e1d4c91ac52e97a5ee8))
+
+## [7.1.1](https://github.com/deepgram/deepgram-python-sdk/compare/v7.1.0...v7.1.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* lowercase bool query params on websocket connect ([#712](https://github.com/deepgram/deepgram-python-sdk/issues/712)) ([8899609](https://github.com/deepgram/deepgram-python-sdk/commit/88996096c6114e2f3a5d25ecf9e2128b11ca07f7))
+
+## [7.1.0](https://github.com/deepgram/deepgram-python-sdk/compare/v7.0.0...v7.1.0) (2026-05-06)
+
+
+### Features
+
+* update generated SDK models and restore agent settings compatibility ([#705](https://github.com/deepgram/deepgram-python-sdk/issues/705)) ([0b820c9](https://github.com/deepgram/deepgram-python-sdk/commit/0b820c900b886eb18da4cc88af7de6e10d1926a6))
+
+
+### Documentation
+
+* target Context7 benchmark gaps in Python skills [no-ci] ([#699](https://github.com/deepgram/deepgram-python-sdk/issues/699)) ([a232eb8](https://github.com/deepgram/deepgram-python-sdk/commit/a232eb8c62df2da98cef13c71e33f0b3b78f1095))
+
+## [7.0.0](https://github.com/deepgram/deepgram-python-sdk/compare/v6.1.1...v7.0.0) (2026-04-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* sdk regeneration 2026-04-24 ([#696](https://github.com/deepgram/deepgram-python-sdk/issues/696))
+* sdk regeneration 2026-04-14 ([#690](https://github.com/deepgram/deepgram-python-sdk/issues/690))
+
+### Features
+
+* sdk regeneration 2026-04-14 ([#690](https://github.com/deepgram/deepgram-python-sdk/issues/690)) ([d4d129f](https://github.com/deepgram/deepgram-python-sdk/commit/d4d129f74edb479a3d34c125cc46412c25e072ff))
+* sdk regeneration 2026-04-24 ([#696](https://github.com/deepgram/deepgram-python-sdk/issues/696)) ([4714207](https://github.com/deepgram/deepgram-python-sdk/commit/47142072be6e674d518791579529d67e2555dcc0))
+
+## [6.1.1](https://github.com/deepgram/deepgram-python-sdk/compare/v6.1.0...v6.1.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* **websockets:** restore optional message param on control send_ methods ([#680](https://github.com/deepgram/deepgram-python-sdk/issues/680)) ([0018fc4](https://github.com/deepgram/deepgram-python-sdk/commit/0018fc489dd05f81773086044ff476514ceed0e0))
+
+## [6.1.0](https://github.com/deepgram/deepgram-python-sdk/compare/v6.0.1...v6.1.0) (2026-03-26)
+
+
+### Features
+
+* **agent:** support multi-provider speak/think configuration and typed listen parameters ([#676](https://github.com/deepgram/deepgram-python-sdk/issues/676)) ([5dfb1aa](https://github.com/deepgram/deepgram-python-sdk/commit/5dfb1aa9a2357f8cfc0e08f55284fd8521446bf7))
+
+## [6.0.1](https://github.com/deepgram/deepgram-python-sdk/compare/v6.0.0...v6.0.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* :herb: skip_validation:true to allow unknown messages back from the API ([#669](https://github.com/deepgram/deepgram-python-sdk/issues/669)) ([48354d2](https://github.com/deepgram/deepgram-python-sdk/commit/48354d2b6990684092ec7d6b78878ac8427d4c23))
+
+## [6.0.0](https://github.com/deepgram/deepgram-python-sdk/compare/v6.0.0-rc.2...v6.0.0) (2026-02-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* promote v6.0.0-rc.2 to v6.0.0 stable
+
+### Features
+
+* promote v6.0.0-rc.2 to v6.0.0 stable ([34f543e](https://github.com/deepgram/deepgram-python-sdk/commit/34f543e2e2ca0f5f073ff87158ae1263445b4d48))
+
+## [6.0.0-rc.2](https://github.com/deepgram/deepgram-python-sdk/compare/v6.0.0-rc.1...v6.0.0-rc.2) (2026-02-18)
+
+
+### Bug Fixes
+
+* **sagemaker:** extract SageMaker transport to separate deepgram-sagemaker package ([#665](https://github.com/deepgram/deepgram-python-sdk/issues/665)) ([e6317c5](https://github.com/deepgram/deepgram-python-sdk/commit/e6317c507c7b5536aa5a485abc54a50318baff2b))
+
+
+### Refactors
+
+* **sagemaker:** extract SageMaker transport to separate package ([#663](https://github.com/deepgram/deepgram-python-sdk/issues/663)) ([d82b699](https://github.com/deepgram/deepgram-python-sdk/commit/d82b6993ff2e6e1b4e67e8da3b2f33b13f2da33d))
+* **sagemaker:** move SageMaker transport to separate package ([#662](https://github.com/deepgram/deepgram-python-sdk/issues/662)) ([16d500e](https://github.com/deepgram/deepgram-python-sdk/commit/16d500eca8e88e54e6d0fbf2b11bb2e8e0de5f48))
+
+## [6.0.0-rc.1](https://github.com/deepgram/deepgram-python-sdk/compare/v5.3.2...v6.0.0-rc.1) (2026-02-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* v6 — fully generated SDK with latest APIs and WebSocket support ([#640](https://github.com/deepgram/deepgram-python-sdk/issues/640))
+
+### Features
+
+* **helpers:** add TextBuilder class for TTS pronunciation and pause controls ([#660](https://github.com/deepgram/deepgram-python-sdk/issues/660)) ([4324120](https://github.com/deepgram/deepgram-python-sdk/commit/43241200a7e025bdc4633bdb47f6708921c82ad1))
+* **sagemaker:** add SageMaker transport support via the separate [`deepgram-sagemaker`](https://pypi.org/project/deepgram-sagemaker/) package (`pip install deepgram-sagemaker`) ([#659](https://github.com/deepgram/deepgram-python-sdk/issues/659))
+* v6 — fully generated SDK with latest APIs and WebSocket support ([#640](https://github.com/deepgram/deepgram-python-sdk/issues/640)) ([bc918fe](https://github.com/deepgram/deepgram-python-sdk/commit/bc918fe23e92eefb5e4c24cbfaad369d4e2818f3))
+* **websockets:** add custom WebSocket transport support ([#658](https://github.com/deepgram/deepgram-python-sdk/issues/658)) ([f6cf0fb](https://github.com/deepgram/deepgram-python-sdk/commit/f6cf0fbc9aaaa844e475e014560cc377819ec1f9))
+
+## [5.3.2](https://github.com/deepgram/deepgram-python-sdk/compare/v5.3.0...v5.3.2) (2026-01-29)
+
+
+### Bug Fixes
+
+* **speak:** correct TTS warning event field names to match API response ([#653](https://github.com/deepgram/deepgram-python-sdk/issues/653)) ([f7ab1da](https://github.com/deepgram/deepgram-python-sdk/commit/f7ab1daac4f6777b806fb1cdaaf1d1084b280506))
+* **types:** change speaker and related fields from float to int ([#652](https://github.com/deepgram/deepgram-python-sdk/issues/652)) ([00ee485](https://github.com/deepgram/deepgram-python-sdk/commit/00ee485252dc7fb3a37914f261a0752469c33553)), closes [#641](https://github.com/deepgram/deepgram-python-sdk/issues/641)
+* **websockets:** support array parameters in Listen v1 and v2 clients ([#650](https://github.com/deepgram/deepgram-python-sdk/issues/650)) ([38cc1e5](https://github.com/deepgram/deepgram-python-sdk/commit/38cc1e5903df1eb7bcf8729361be8c25042216af))
+
+
+### Miscellaneous Chores
+
+* release 5.3.2 ([d61ce8c](https://github.com/deepgram/deepgram-python-sdk/commit/d61ce8c504030e7b6ea7ee3b7be8a642d5f0ee53))
+
+## [5.3.0](https://github.com/deepgram/deepgram-python-sdk/compare/v5.2.0...v5.3.0) (2025-10-30)
+
+
+### Features
+
+* add projects billing fields list methods ([#621](https://github.com/deepgram/deepgram-python-sdk/issues/621)) ([10d67cd](https://github.com/deepgram/deepgram-python-sdk/commit/10d67cd91aef1436a9e85e3b607dc7b81eebba43))
+
+## [5.2.0](https://github.com/deepgram/deepgram-python-sdk/compare/v5.1.0...v5.2.0) (2025-10-21)
+
+
+### Features
+
+* SDK regeneration (21 Oct 2025) ([#609](https://github.com/deepgram/deepgram-python-sdk/issues/609)) ([5b21460](https://github.com/deepgram/deepgram-python-sdk/commit/5b2146058842fe4dc6d6ef4bd9c0777b08f48fab))
+
+## [5.1.0](https://github.com/deepgram/deepgram-python-sdk/compare/v5.0.0...v5.1.0) (2025-10-16)
+
+
+### Features
+
+* mention keep alive in migration guide ([#594](https://github.com/deepgram/deepgram-python-sdk/issues/594)) ([5a8c79e](https://github.com/deepgram/deepgram-python-sdk/commit/5a8c79e814e3efeb81a8c51a0a05d93bc17e6bb5))
+* update the SDK with upstream spec changes ([d77ad96](https://github.com/deepgram/deepgram-python-sdk/commit/d77ad966db62e068fb6e346d247299bc9efd1bd5))
+
+
+### Bug Fixes
+
+* **ci:** reference the correct secret ([#585](https://github.com/deepgram/deepgram-python-sdk/issues/585)) ([09550c7](https://github.com/deepgram/deepgram-python-sdk/commit/09550c7c43b6778d52030bd70a48905c425d1365))
+* corrects order to the release workflow ([#583](https://github.com/deepgram/deepgram-python-sdk/issues/583)) ([3abbac3](https://github.com/deepgram/deepgram-python-sdk/commit/3abbac3271e77e718dde19580a16cdf915c263df))
+* remove testpypi we don't need it in the workflow ([#582](https://github.com/deepgram/deepgram-python-sdk/issues/582)) ([b2e2538](https://github.com/deepgram/deepgram-python-sdk/commit/b2e2538cb9528f48e9a20a839763ff82fe40ab8b))
+* support multiple keyterms for v2 listen client ([#595](https://github.com/deepgram/deepgram-python-sdk/issues/595)) ([7a9d41d](https://github.com/deepgram/deepgram-python-sdk/commit/7a9d41d2b5a48dd094ca20e7f5a227afbdd46dc0))
+
+## [5.0.0](https://github.com/deepgram/deepgram-python-sdk/compare/v4.8.1...v5.0.0) (2025-10-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* This is a significant breaking change, and should be carried out in conjunction with our migration guide.
+
+### Features
+
+* implements new generated SDK architecture, all call signatures ([#572](https://github.com/deepgram/deepgram-python-sdk/issues/572)) ([768d514](https://github.com/deepgram/deepgram-python-sdk/commit/768d51492bf7414067266cdc2cf7b98f1f3981dc))
+
+
+### Bug Fixes
+
+* release-please config fixes ([#579](https://github.com/deepgram/deepgram-python-sdk/issues/579)) ([a603806](https://github.com/deepgram/deepgram-python-sdk/commit/a6038067596f1643cd5c7255f0e5a7ede1ff43fb))

@@ -1,0 +1,91 @@
+"""
+Example: Live Transcription with WebSocket V2 (Listen V2)
+
+This example shows how to use Listen V2 for advanced conversational speech recognition
+with contextual turn detection.
+
+It streams the bundled WAV fixture directly, so the example lets Deepgram infer the
+audio format from the container instead of forcing raw linear16 settings.
+"""
+
+import os
+import threading
+import time
+from pathlib import Path
+from typing import Union
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from deepgram import DeepgramClient
+from deepgram.core.events import EventType
+from deepgram.listen.v2.types import (
+    ListenV2CloseStream,
+    ListenV2Configure,
+    ListenV2Connected,
+    ListenV2FatalError,
+    ListenV2TurnInfo,
+)
+
+ListenV2SocketClientResponse = Union[ListenV2Connected, ListenV2TurnInfo, ListenV2FatalError]
+
+client = DeepgramClient(api_key=os.environ.get("DEEPGRAM_API_KEY"))
+
+try:
+    with client.listen.v2.connect(
+        model="flux-general-en",
+        # Flux STT numerals: format spoken numbers as digits (e.g. "one twenty" -> "120").
+        numerals="false",
+    ) as connection:
+
+        def on_message(message: ListenV2SocketClientResponse) -> None:
+            # V2 messages may arrive as typed objects or dicts depending on the union match
+            if isinstance(message, dict):
+                msg_type = message.get("type", "Unknown")
+                print(f"Received {msg_type} event")
+                if msg_type == "TurnInfo":
+                    print(f"  transcript: {message.get('transcript', '')}")
+                    print(f"  event: {message.get('event', '')}")
+                    print(f"  turn_index: {message.get('turn_index', '')}")
+            elif isinstance(message, ListenV2TurnInfo):
+                print("Received TurnInfo event")
+                print(f"  transcript: {message.transcript}")
+                print(f"  event: {message.event}")
+                print(f"  turn_index: {message.turn_index}")
+            else:
+                msg_type = getattr(message, "type", type(message).__name__)
+                print(f"Received {msg_type} event")
+
+        connection.on(EventType.OPEN, lambda _: print("Connection opened"))
+        connection.on(EventType.MESSAGE, on_message)
+        connection.on(EventType.CLOSE, lambda _: print("Connection closed"))
+        connection.on(EventType.ERROR, lambda error: print(f"Error: {type(error).__name__}: {error}"))
+
+        # Update formatting for turns transcribed after this Configure message.
+        connection.send_configure(ListenV2Configure(numerals=True))
+
+        # Send audio in a background thread so start_listening can process responses
+        def send_audio():
+            audio_path = Path(__file__).parent / "fixtures" / "audio.wav"
+            with open(audio_path, "rb") as f:
+                audio = f.read()
+
+            # Send in chunks
+            chunk_size = 4096
+            for i in range(0, len(audio), chunk_size):
+                connection.send_media(audio[i : i + chunk_size])
+                time.sleep(0.01)  # pace the sending
+
+            # Signal end of audio
+            time.sleep(2)
+            connection.send_close_stream(ListenV2CloseStream(type="CloseStream"))
+
+        sender = threading.Thread(target=send_audio, daemon=True)
+        sender.start()
+
+        # This blocks until the connection closes
+        connection.start_listening()
+
+except Exception as e:
+    print(f"Error: {type(e).__name__}: {e}")

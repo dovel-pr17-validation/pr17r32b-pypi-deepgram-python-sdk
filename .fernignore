@@ -1,0 +1,366 @@
+# Custom client implementation extending BaseClient with additional features:
+# - access_token parameter support (Bearer token authentication)
+# - Automatic session ID generation and header injection (x-deepgram-session-id)
+# - transport_factory parameter for plugging in a custom WebSocket transport
+# - reconnect flag (default True) — declarative flag indicating whether the SDK
+#   is expected to manage WebSocket reconnects. Auto-disabled when a custom
+#   transport_factory is provided so transports that own their retry lifecycle
+#   (e.g. SageMaker) aren't double-stacked with future SDK-side reconnect logic.
+# This file is manually maintained and should not be regenerated
+src/deepgram/client.py
+
+# Hand-written security utility: installs a logging.Filter on the third-party
+# `websockets` client/server loggers that masks the Authorization header (API
+# key / access token) in DEBUG handshake logs. No Fern-generated counterpart.
+src/deepgram/_secure_logging.py
+
+# Hand-written read-side compatibility base for Listen V2 response models.
+# Provides read-only wire-key subscript access during the SDK 7.x
+# transition from raw dict responses to typed models. No Fern counterpart.
+src/deepgram/listen/v2/types/_dict_compat.py
+
+# Hand-written v7 compatibility wrappers for the pre-regen Topics and Intents
+# response and request paths. The generated response now exposes direct
+# ``segments``; these modules preserve the deprecated ``results.*.segments``
+# imports while the generated direct models provide runtime facades.
+src/deepgram/types/shared_topics_results.py
+src/deepgram/types/shared_topics_results_topics.py
+src/deepgram/types/shared_topics_results_topics_segments_item.py
+src/deepgram/types/shared_topics_results_topics_segments_item_topics_item.py
+src/deepgram/types/shared_intents_results.py
+src/deepgram/types/shared_intents_results_intents.py
+src/deepgram/types/shared_intents_results_intents_segments_item.py
+src/deepgram/types/shared_intents_results_intents_segments_item_intents_item.py
+src/deepgram/requests/shared_topics_results.py
+src/deepgram/requests/shared_topics_results_topics.py
+src/deepgram/requests/shared_topics_results_topics_segments_item.py
+src/deepgram/requests/shared_topics_results_topics_segments_item_topics_item.py
+src/deepgram/requests/shared_intents_results.py
+src/deepgram/requests/shared_intents_results_intents.py
+src/deepgram/requests/shared_intents_results_intents_segments_item.py
+src/deepgram/requests/shared_intents_results_intents_segments_item_intents_item.py
+
+# Generated v7 Topics and Intents compatibility surfaces. These direct models
+# and Params retain the deprecated ``results`` construction shape and normalize
+# it to generated ``segments`` while preserving the permanent wrappers above.
+# [temporarily frozen — remove in the next major after retiring ``results``]
+src/deepgram/types/shared_topics.py
+src/deepgram/types/shared_intents.py
+src/deepgram/requests/shared_topics.py
+src/deepgram/requests/shared_intents.py
+
+# Agent Think Live ConversationText gained a required wire field in 2026-10.
+# The runtime model defaults missing legacy response payloads to `default`, while
+# the request TypedDict accepts the pre-2026-10 shape for existing typed callers.
+# SDK-created runtime models still serialize the current wire-required field.
+# [temporarily frozen — remove after legacy server payloads are retired]
+src/deepgram/agent/v1/types/agent_v1conversation_text.py
+src/deepgram/agent/v1/requests/agent_v1conversation_text.py
+
+# WebSocket socket clients:
+# - except Exception broad catch (supports custom transports, generator narrows to WebSocketException)
+# - _sanitize_numeric_types in agent socket client (float→int for API)
+# - optional message param on control send_ methods (send_keep_alive, send_close_stream, etc.)
+#   so users don't need to instantiate the type themselves for no-payload control messages
+# - agent/v1 send_raw: public raw-control sender for protocol-transparent bridges
+# - listen/v2 send_configure: runtime tolerance for a raw dict alongside the
+#   generated ListenV2Configure model
+# [temporarily frozen — manual patches listed above]
+src/deepgram/agent/v1/socket_client.py
+src/deepgram/listen/v1/socket_client.py
+src/deepgram/listen/v2/socket_client.py
+src/deepgram/speak/v1/socket_client.py
+src/deepgram/speak/v2/socket_client.py
+
+# Agent TTS provider expressivity must reject fractional values rather than
+# allowing Pydantic v1 to truncate them before the API sees the request.
+# [temporarily frozen — remove when Pydantic v1 support is dropped]
+src/deepgram/types/speak_settings_v1provider.py
+src/deepgram/types/deepgram.py
+
+# Backward-compat patch: AgentV1SettingsAgentContext schema restructure as of
+# 2026-05-05. The new schema nests messages under .context.messages; this file
+# carries a model_validator(mode='before') that accepts the legacy `messages=`
+# kwarg and remaps it to `context={"messages": ...}` so existing callers keep
+# producing the correct wire payload, plus a read-side `.messages` property so
+# existing attribute access keeps working.
+src/deepgram/agent/v1/types/agent_v1settings_agent_context.py
+src/deepgram/agent/v1/types/agent_v1settings_agent.py
+src/deepgram/agent/v1/types/agent_v1settings.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent.py
+src/deepgram/agent/v1/requests/agent_v1settings.py
+
+# Backward-compatibility alias shims for renamed generated public types/params.
+# These are hand-written wrappers around the current generated names and must not be regenerated.
+src/deepgram/agent/v1/types/agent_v1history_content.py
+src/deepgram/agent/v1/types/agent_v1history_function_calls.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_messages_item.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_messages_item_content.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_messages_item_content_role.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_messages_item_function_calls.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_messages_item_function_calls_function_calls_item.py
+src/deepgram/agent/v1/requests/agent_v1history_content.py
+src/deepgram/agent/v1/requests/agent_v1history_function_calls.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_messages_item.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_messages_item_content.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_messages_item_function_calls.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_messages_item_function_calls_function_calls_item.py
+src/deepgram/types/create_key_v1request_one.py
+src/deepgram/requests/create_key_v1request_one.py
+
+# Backward-compatibility alias shims for the 2026-08-18 regen renames. The generator
+# dropped the *ThinkProvider*/*SpeakProvider* prefixes from these public model/voice/
+# version types (AnthropicThinkProviderModel -> AnthropicModel, CartesiaSpeakProvider* ->
+# Cartesia*, DeepgramSpeakProviderModel -> DeepgramModel, GoogleThinkProvider* -> Google*,
+# GroqThinkProviderReasoningMode -> GroqReasoningMode). Same regen renamed the agent
+# conversation-history subtypes (AgentV1HistoryContentRole -> ConversationHistoryMessageRole,
+# AgentV1HistoryFunctionCallsFunctionCallsItem -> FunctionCallHistoryMessageFunctionCallsItem)
+# and deleted the doubled AgentV1SettingsAgentContextContextMessagesItem* leaf modules. These
+# hand-written aliases preserve every old public import path. Regression coverage in
+# tests/custom/test_compat_aliases.py. Remove and unfreeze when a future major retires them.
+src/deepgram/types/anthropic_think_provider_model.py
+src/deepgram/types/cartesia_speak_provider_model_id.py
+src/deepgram/types/cartesia_speak_provider_voice.py
+src/deepgram/types/deepgram_speak_provider_model.py
+src/deepgram/types/google_think_provider_model.py
+src/deepgram/types/google_think_provider_version.py
+src/deepgram/types/groq_think_provider_reasoning_mode.py
+src/deepgram/requests/cartesia_speak_provider_voice.py
+src/deepgram/agent/v1/types/agent_v1history_content_role.py
+src/deepgram/agent/v1/types/agent_v1history_function_calls_function_calls_item.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_context_messages_item_content_role.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_context_messages_item_function_calls_function_calls_item.py
+src/deepgram/agent/v1/requests/agent_v1history_function_calls_function_calls_item.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_context_messages_item_function_calls_function_calls_item.py
+
+# Backward-compatibility alias shims for the 2026-05-14 listen-provider rename.
+# The spec deduplicated AgentV1SettingsAgent[Context]ListenProviderV1/V2/V2LanguageHint
+# into a single top-level DeepgramListenProvider* type. These hand-written aliases
+# preserve the old public import paths so existing callers keep working.
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_listen_provider_v1.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_listen_provider_v2.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_listen_provider_v2language_hint.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_listen_provider_v1.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_listen_provider_v2.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_listen_provider_v1.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_listen_provider_v2.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_context_listen_provider_v2language_hint.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_listen_provider_v1.py
+src/deepgram/agent/v1/requests/agent_v1settings_agent_listen_provider_v2.py
+
+# Hand-written compat shims recreating the top-level DeepgramListenProviderV2LanguageHint
+# type/param that Fern removed in the 2026-06-15 regen (Union[str, List[str]]). The
+# *V2LanguageHint listen-provider aliases above import these, and they remain part of the
+# public import surface, so they are recreated by hand and frozen so Fern won't delete them.
+src/deepgram/types/deepgram_listen_provider_v2language_hint.py
+src/deepgram/requests/deepgram_listen_provider_v2language_hint.py
+
+# Behavioral back-compat shim for the language_hint -> language_hints rename (2026-06-15
+# regen). The public field was historically (incorrectly) named `language_hint`, accepting
+# a str or a list; the API field is `language_hints` (a list, and the server uses
+# deny_unknown_fields so the singular key is rejected on the wire). These three generated
+# models carry a hand-added model_validator(mode='before') / root_validator(pre=True) that
+# remaps a legacy `language_hint=` kwarg to `language_hints` and drops the dead singular
+# key. Remove and unfreeze these shims when the singular alias is intentionally retired in a
+# future major release.
+src/deepgram/types/deepgram_listen_provider_v2.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_listen_provider.py
+src/deepgram/agent/v1/types/agent_v1settings_agent_context_listen_provider.py
+
+# Backward-compat patch for the 2026-07-31 AgentV1UpdateListen provider retype. The
+# generated `provider` field is now the required discriminated union
+# AgentV1UpdateListenListenProvider (_V1/_V2, discriminant `version`). This generated
+# model carries a hand-added model_validator(mode='before') / root_validator(pre=True)
+# that coerces a legacy DeepgramListenProviderV1/V2 (or a dict lacking the version
+# discriminant) into the new shape so existing callers keep working. Remove and unfreeze
+# when the old provider payloads are retired in a future major.
+src/deepgram/agent/v1/types/agent_v1update_listen_listen.py
+
+# Hand-written compat shim recreating ListenV2CloseStreamType, which Fern removed in the
+# 2026-06-15 regen (docs #946). The original generated type wrongly allowed
+# Union[Literal["Finalize","CloseStream","KeepAlive"], Any] — v2 copied v1's control-message
+# enum, but a CloseStream message's `type` can only ever be "CloseStream". Recreated as the
+# corrected single-value Literal["CloseStream"] to preserve the public import path without
+# resurrecting the invalid values. Frozen so Fern won't delete it again.
+src/deepgram/listen/v2/types/listen_v2close_stream_type.py
+
+# Temporarily frozen generated package barrels that carry hand-applied legacy alias
+# re-exports. Before each regen, swap these originals to .bak paths so Fern can add new
+# exports; then restore the aliases alongside every genuine generated addition.
+src/deepgram/__init__.py
+src/deepgram/agent/__init__.py
+src/deepgram/agent/v1/__init__.py
+src/deepgram/agent/v1/types/__init__.py
+src/deepgram/agent/v1/requests/__init__.py
+src/deepgram/types/__init__.py
+src/deepgram/requests/__init__.py
+# listen __init__.py files re-export the ListenV2CloseStreamType shim above.
+src/deepgram/listen/__init__.py
+src/deepgram/listen/v2/__init__.py
+src/deepgram/listen/v2/types/__init__.py
+
+# Coerces Python bools to lowercase "true"/"false" before urlencode, which
+# otherwise stringifies via str() and produces "True"/"False" — rejected by
+# Deepgram's websocket query strings. HTTP raw_clients hand params to httpx
+# directly and are unaffected; httpx accepts the pre-stringified values fine.
+# [temporarily frozen — manual patches listed above]
+# Credential redaction in the error types. Every websocket `connect()` path raises
+# ApiError(headers=dict(headers), ...) with the FULL request headers, and both error
+# types stringify their headers dict -- so an unredacted `Authorization` reached
+# str(e), tracebacks, log aggregators and error trackers (which serialise attributes
+# as well as the message). Both now mask credential values at construction via
+# _secure_logging.redact_sensitive_headers, keeping non-sensitive headers
+# (dg-request-id) for debugging. Same threat _secure_logging.py already covers for
+# the websockets DEBUG handshake logs; this is the other path to it. Unfreeze if the
+# generator starts redacting credentials itself.
+
+src/deepgram/core/api_error.py
+src/deepgram/core/parse_error.py
+
+# Pydantic 2.14+ requires explicit generic annotations for these adapters or
+# mypy rejects the generated module with var-annotated errors.
+src/deepgram/core/pydantic_utilities.py
+
+src/deepgram/core/query_encoder.py
+
+# The generated metadata fallback must match the published SDK version in source
+# checkouts and carries a release-please marker so it is updated on release.
+# [temporarily frozen — remove when Fern emits a release-managed fallback]
+src/deepgram/core/client_wrapper.py
+
+# Generated docstrings have a local whitespace cleanup.
+# [temporarily frozen — remove when Fern emits whitespace-clean docstrings]
+src/deepgram/speak/v2/types/speak_v2warning.py
+src/deepgram/speak/v2/requests/speak_v2warning.py
+src/deepgram/agent/v1/types/agent_v1inject_dynamic_agent_message.py
+src/deepgram/agent/v1/requests/agent_v1inject_dynamic_agent_message.py
+src/deepgram/listen/v1/types/listen_v1configure_failure.py
+src/deepgram/listen/v1/requests/listen_v1configure_failure.py
+
+# Read-side compatibility for the SDK 7.7 Listen V2 response retype. These
+# generated response models inherit the hand-written base above so callers can
+# temporarily use both attribute and read-only subscript access. Remove the custom
+# inheritance and unfreeze these files in the next major release.
+# [temporarily frozen -- manual patch described above]
+src/deepgram/listen/v2/types/listen_v2connected.py
+src/deepgram/listen/v2/types/listen_v2turn_info.py
+src/deepgram/listen/v2/types/listen_v2turn_info_words_item.py
+src/deepgram/listen/v2/types/listen_v2configure_success.py
+src/deepgram/listen/v2/types/listen_v2configure_success_thresholds.py
+src/deepgram/listen/v2/types/listen_v2configure_failure.py
+src/deepgram/listen/v2/types/listen_v2fatal_error.py
+src/deepgram/listen/v2/types/listen_v2warning.py
+
+# Hand-written custom tests
+tests/custom/test_agent_custom_think_provider.py
+tests/custom/test_agent_history.py
+tests/custom/test_agent_think_live.py
+tests/custom/test_agent_update_listen.py
+tests/custom/test_api_error_redaction.py
+tests/custom/test_api_key_env_resolution.py
+tests/custom/test_client.py
+tests/custom/test_client_construction_and_helpers.py
+tests/custom/test_compat_aliases.py
+tests/custom/test_core_internals_branches.py
+tests/custom/test_core_utilities_coverage.py
+tests/custom/test_eot_thresholds_feature.py
+tests/custom/test_http_endpoints_coverage.py
+tests/custom/test_http_retry_coverage.py
+tests/custom/test_language_hint_compat.py
+tests/custom/test_language_hints_feature.py
+tests/custom/test_latency_report_stt_compat.py
+tests/custom/test_listen_v1_configure.py
+tests/custom/test_listen_v2_connect_wire.py
+tests/custom/test_listen_v2_regen_constraints.py
+tests/custom/test_logging_and_retry_branches.py
+tests/custom/test_model_dict_compat.py
+tests/custom/test_query_encoder.py
+tests/custom/test_regen_response_fields.py
+tests/custom/test_secure_logging.py
+tests/custom/test_socket_client_shims.py
+tests/custom/test_speak_v2_connect_wire.py
+tests/custom/test_speak_v2_interrupt_configure.py
+tests/custom/test_speak_v2_coverage.py
+tests/custom/test_speak_v2_socket.py
+tests/custom/test_text_builder.py
+tests/custom/test_flux_tts_controls.py
+tests/custom/test_topics_intents_v7_compat.py
+tests/custom/test_transport.py
+tests/custom/test_websocket_streaming_coverage.py
+tests/custom/test_voice_agent_force_end_turn_example.py
+tests/typecheck/compat_aliases.py
+
+# Wire test with restored compatibility coverage for legacy create-key request alias
+tests/wire/test_manage_v1_projects_keys.py
+
+# Wire test with restored query-parameter coverage for manage.v1.projects.requests.list.
+# The 2026-08-11 regen simplified the upstream spec *example* for this endpoint, and Fern
+# derives the wire test from the example, so the generated test dropped all ten optional
+# query params (including the datetime -> ISO-8601 Z encoding) while the client signature
+# still forwards them. Frozen so future regens do not silently drop that check again.
+tests/wire/test_manage_v1_projects_requests.py
+
+# Wire test with restored query-parameter coverage for listen.v1.media.transcribe_url.
+# Third instance of the same mechanism as the two entries above: the 2026-08-18 regen
+# simplified the upstream /v1/listen spec *example* (mapping renamed "default" ->
+# "Remote File"), and Fern derives the wire test from the example, so the generated test
+# dropped all 37 optional query params -- including the bool -> lowercase "true"/"false"
+# assertions -- while the client signature still forwards every one of them. Frozen so
+# future regens cannot silently drop that check again.
+tests/wire/test_listen_v1_media.py
+
+# Manual standalone tests
+tests/manual
+
+# README with custom examples, migration guide links, and contributing section
+README.md
+
+# Changelog managed by release-please
+CHANGELOG.md
+
+# Contributing guide
+CONTRIBUTING.md
+
+# Reference with Fern-generated REST API docs plus manually maintained WebSocket sections
+reference.md
+
+# TextBuilder helpers for TTS pronunciation and pause controls.
+# Manually maintained — not auto-generated.
+src/deepgram/helpers
+
+# Custom WebSocket transport support:
+# - transport_interface.py: Protocol definitions (SyncTransport, AsyncTransport) for
+#   users implementing custom transports. This is the public-facing interface file.
+# - transport.py: Internal shims, install/restore helpers, and conflict guard.
+# - transports/: Module stub (SageMaker transport moved to separate deepgram-sagemaker package).
+# All are manually maintained and should not be regenerated.
+src/deepgram/transport_interface.py
+src/deepgram/transport.py
+src/deepgram/transports
+
+# Agent files (Claude Code, OpenCode, other agent tools)
+# .agents/skills/ holds agent-agnostic skills discoverable via `npx skills`
+CLAUDE.md
+AGENTS.md
+.claude
+.agents
+
+# Hand-written coverage configuration (branch coverage, scoped source, generated
+# models excluded, fail_under gate). No Fern counterpart. Deliberately kept out
+# of pyproject.toml, which Fern regenerates: freezing pyproject.toml would also
+# block generator dependency updates (see 5c1e845, where a pydantic-core bound
+# fix for issue #701 shipped as a pyproject.toml-only regen change).
+.coveragerc
+
+# Hand-added ignores for local coverage artifacts (.coverage, htmlcov/,
+# coverage.xml) on top of Fern's generated entries. Fern has regenerated this
+# file before (fdcce88, ad93815, 4bee463) and would strip them.
+# [temporarily frozen — unfreeze + re-diff before each regen, then re-apply the
+# three coverage lines]
+.gitignore
+
+# Folders to ignore
+.github
+docs
+examples
